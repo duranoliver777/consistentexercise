@@ -12,6 +12,7 @@ Contexto importante del proyecto, para recordar la idea y las decisiones a lo la
 - Kotlin + Jetpack Compose (Material 3), un solo módulo `:app`.
 - AGP 9.4.1, Kotlin 2.2.10, Gradle wrapper 9.6.0, Java 11, `minSdk 28`, `compileSdk`/`targetSdk 37`.
 - Paquete base: `com.example.consistentexercise`.
+- Git: repositorio local inicializado con commit inicial. Conexión a remoto de GitHub en proceso.
 
 ## Decisiones y notas
 - Estilo de borde reutilizable extraído a `ui/PantallaConBorde.kt` (composables `PantallaConBorde` y `BordeDifuminado`, más los colores `AzulClaro` y `AzulBoton`). Ambas pantallas usan `PantallaConBorde` y por tanto comparten fondo blanco y borde.
