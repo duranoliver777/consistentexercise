@@ -1,0 +1,61 @@
+package com.example.consistentexercise.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+
+val AzulClaro = Color(0xFF81D4FA)
+val AzulBoton = Color(0xFF4FC3F7)
+
+@Composable
+fun PantallaConBorde(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        BordeDifuminado(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+        )
+        content()
+    }
+}
+
+@Composable
+private fun BordeDifuminado(modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(24.dp)
+    Box(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(width = 6.dp, color = AzulClaro, shape = shape)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(6.dp)
+                .border(width = 2.dp, color = AzulClaro, shape = shape)
+                .blur(6.dp)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(6.dp)
+                .border(width = 2.dp, color = AzulClaro.copy(alpha = 0.85f), shape = shape)
+        )
+    }
+}
