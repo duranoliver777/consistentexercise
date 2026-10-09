@@ -1,4 +1,3 @@
-git
 # Memory.md
 
 Contexto importante del proyecto, para recordar la idea y las decisiones a lo largo del tiempo.
