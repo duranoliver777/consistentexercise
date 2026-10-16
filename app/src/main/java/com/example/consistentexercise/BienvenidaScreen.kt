@@ -4,8 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,9 +31,22 @@ import com.example.consistentexercise.ui.theme.ConsistentExerciseTheme
 @Composable
 fun BienvenidaScreen(
     onContinuar: () -> Unit,
+    onAbrirConfiguracion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PantallaConBorde(modifier = modifier) {
+        IconButton(
+            onClick = onAbrirConfiguracion,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 20.dp, end = 20.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Configuración",
+                tint = Color.Black
+            )
+        }
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -61,6 +79,6 @@ fun BienvenidaScreen(
 @Composable
 fun BienvenidaPreview() {
     ConsistentExerciseTheme {
-        BienvenidaScreen(onContinuar = {})
+        BienvenidaScreen(onContinuar = {}, onAbrirConfiguracion = {})
     }
 }

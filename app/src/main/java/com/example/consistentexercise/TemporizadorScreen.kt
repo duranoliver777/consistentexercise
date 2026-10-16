@@ -15,9 +15,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,7 +82,10 @@ private fun generarSonidoDespertador(): ShortArray {
 }
 
 @Composable
-fun TemporizadorScreen(modifier: Modifier = Modifier) {
+fun TemporizadorScreen(
+    onAbrirConfiguracion: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var minutos by rememberSaveable { mutableIntStateOf(1) }
     var segundos by rememberSaveable { mutableIntStateOf(0) }
     var restante by rememberSaveable { mutableIntStateOf(minutos * 60 + segundos) }
@@ -129,6 +136,18 @@ fun TemporizadorScreen(modifier: Modifier = Modifier) {
     }
 
     PantallaConBorde(modifier = modifier) {
+        IconButton(
+            onClick = onAbrirConfiguracion,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 20.dp, end = 20.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Configuración",
+                tint = Color.Black
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -368,6 +387,6 @@ private fun AjusteTiempo(
 @Composable
 fun TemporizadorPreview() {
     ConsistentExerciseTheme {
-        TemporizadorScreen()
+        TemporizadorScreen(onAbrirConfiguracion = {})
     }
 }

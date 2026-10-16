@@ -17,6 +17,9 @@ Contexto importante del proyecto, para recordar la idea y las decisiones a lo la
 - Estilo de borde reutilizable extraído a `ui/PantallaConBorde.kt` (composables `PantallaConBorde` y `BordeDifuminado`, más los colores `AzulClaro` y `AzulBoton`). Ambas pantallas usan `PantallaConBorde` y por tanto comparten fondo blanco y borde.
 - `MainActivity.kt` solo contiene la Activity y `AppConsistentExercise`, que hace de host de navegación con un booleano `enTemporizador` (`rememberSaveable`), sin librería de navegación.
 - `BienvenidaScreen.kt` y `TemporizadorScreen.kt` viven en el paquete raíz `com.example.consistentexercise`.
+- `ConfiguracionScreen.kt` (también en el paquete raíz) es una pantalla placeholder ("Configuración" + "Próximamente") con flecha de volver arriba a la izquierda; su contenido se definirá más adelante.
+- Navegación: `MainActivity.kt` usa un enum `Pantalla { BIENVENIDA, TEMPORIZADOR, CONFIGURACION }` con `rememberSaveable`, un `BackHandler` (Configuración → pantalla previa; otras → Bienvenida/salir) y un `rememberSaveableStateHolder` con `SaveableStateProvider(pantalla)` para conservar el estado del temporizador al ir a Configuración y volver.
+- Botón de configuración: `IconButton` con `Icons.Filled.Settings` en la parte superior derecha de `BienvenidaScreen` y `TemporizadorScreen` (`align(Alignment.TopEnd)` + `padding(top = 20.dp, end = 20.dp)`), para no solaparse con el borde. Los íconos requirieron añadir `androidx.compose.material:material-icons-core` (gestionado por el BOM) en `gradle/libs.versions.toml` y `app/build.gradle.kts`, porque Material 3 no lo trae de forma transitiva.
 - El color azul claro del borde es `AzulClaro = Color(0xFF81D4FA)`; el efecto difuminado se logra con `Modifier.blur(6.dp)` sobre una capa de borde de 2.dp (el blur solo se aplica en API 31+).
 - Fondo blanco (`Color.White`) en la pantalla de bienvenida.
 - El botón "Continuar" usa `AzulBoton = Color(0xFF4FC3F7)` (un azul algo más oscuro que el borde, sin gran contraste) y mide 50% del ancho y 10% del alto de la pantalla (`fillMaxWidth(0.5f)` + `fillMaxHeight(0.1f)`); su texto va a 22sp (ajustado por el usuario) y en cursiva (`FontStyle.Italic`).
@@ -29,3 +32,10 @@ Contexto importante del proyecto, para recordar la idea y las decisiones a lo la
 
 ## Pendientes / próximos pasos
 - (pendiente) Definir funcionalidades de dominio (registro de entrenamientos, rachas, recordatorios, etc.).
+- (pendiente) Apartado de configuración, con estos grupos:
+  - Temporizador/ejercicio: duración por defecto, intervalos (duración/pausa), sonido de alarma on/off y tono, vibración al terminar, auto-iniciar al entrar.
+  - Constancia: meta diaria/semanal, día de inicio de semana para rachas, recordatorio de objetivo al abrir.
+  - Notificaciones: recordatorios on/off, hora del recordatorio diario, días activos.
+  - Apariencia: tema claro/oscuro/sistema, color dinámico on/off, color de acento (azul actual vs. otros).
+  - Datos: exportar/importar historial (JSON/CSV), borrar datos/estadísticas con confirmación.
+  - Otros: "Acerca de" (versión, licencias), idioma.
