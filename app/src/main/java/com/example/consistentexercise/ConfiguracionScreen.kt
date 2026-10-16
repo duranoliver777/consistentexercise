@@ -3,6 +3,7 @@ package com.example.consistentexercise
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -30,11 +31,13 @@ fun ConfiguracionScreen(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(top = 20.dp, start = 20.dp)
+                .size(56.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Volver",
-                tint = Color.Black
+                tint = Color.Black,
+                modifier = Modifier.size(28.dp)
             )
         }
         Column(

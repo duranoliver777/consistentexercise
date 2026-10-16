@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -40,11 +41,13 @@ fun BienvenidaScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 20.dp, end = 20.dp)
+                .size(56.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = "Configuración",
-                tint = Color.Black
+                tint = Color.Black,
+                modifier = Modifier.size(28.dp)
             )
         }
         Column(

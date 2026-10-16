@@ -1,8 +1,6 @@
 package com.example.consistentexercise
 
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
+import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -25,12 +22,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -45,107 +36,27 @@ import com.example.consistentexercise.ui.AzulBoton
 import com.example.consistentexercise.ui.AzulClaro
 import com.example.consistentexercise.ui.PantallaConBorde
 import com.example.consistentexercise.ui.theme.ConsistentExerciseTheme
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.delay
-import kotlin.math.PI
-import kotlin.math.sin
-
-private const val FRECUENCIA_MUESTREO = 44100
-
-private fun generarSonidoDespertador(): ShortArray {
-    val frecuencia = 1300
-    val msBip = 50
-    val msSilencio = 50
-    val msInactividad = 900
-    val msFade = 12
-    val msCiclo = 3 * msBip + 2 * msSilencio + msInactividad
-    val totalMuestras = FRECUENCIA_MUESTREO * msCiclo / 1000
-    val buffer = ShortArray(totalMuestras)
-    val finBips = 4 * msBip + 2 * msSilencio
-    for (i in 0 until totalMuestras) {
-        val ms = (i * 1000L / FRECUENCIA_MUESTREO).toInt()
-        if (ms < finBips) {
-            val msEnBip = ms % (msBip + msSilencio)
-            if (msEnBip < msBip) {
-                val envolvente = when {
-                    msEnBip < msFade -> msEnBip.toDouble() / msFade
-                    msEnBip > msBip - msFade -> (msBip - msEnBip).toDouble() / msFade
-                    else -> 1.0
-                }
-                val t = i.toDouble() / FRECUENCIA_MUESTREO
-                val muestra = sin(2.0 * PI * frecuencia * t) * 0.5 * envolvente
-                buffer[i] = (muestra * Short.MAX_VALUE).toInt().toShort()
-            }
-        }
-    }
-    return buffer
-}
+import kotlin.math.ceil
 
 @Composable
 fun TemporizadorScreen(
+    estado: TemporizadorEstado,
     onAbrirConfiguracion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var minutos by rememberSaveable { mutableIntStateOf(1) }
-    var segundos by rememberSaveable { mutableIntStateOf(0) }
-    var restante by rememberSaveable { mutableIntStateOf(minutos * 60 + segundos) }
-    var corriendo by rememberSaveable { mutableStateOf(false) }
-    var tiempoAgotado by rememberSaveable { mutableStateOf(false) }
-    var conteo by rememberSaveable { mutableIntStateOf(0) }
-
-    LaunchedEffect(tiempoAgotado) {
-        if (!tiempoAgotado) return@LaunchedEffect
-        val pcm = generarSonidoDespertador()
-        val track = AudioTrack.Builder()
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            .setAudioFormat(
-                AudioFormat.Builder()
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(FRECUENCIA_MUESTREO)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .build()
-            )
-            .setBufferSizeInBytes(pcm.size * 2)
-            .setTransferMode(AudioTrack.MODE_STATIC)
-            .build()
-        track.write(pcm, 0, pcm.size)
-        track.setLoopPoints(0, pcm.size, -1)
-        track.play()
-        try {
-            awaitCancellation()
-        } finally {
-            track.stop()
-            track.release()
-        }
-    }
-
-    LaunchedEffect(corriendo, restante) {
-        if (corriendo && restante > 0) {
-            delay(1000)
-            restante -= 1
-            if (restante == 0) {
-                corriendo = false
-                tiempoAgotado = true
-            }
-        }
-    }
-
     PantallaConBorde(modifier = modifier) {
         IconButton(
             onClick = onAbrirConfiguracion,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 20.dp, end = 20.dp)
+                .size(56.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = "Configuración",
-                tint = Color.Black
+                tint = Color.Black,
+                modifier = Modifier.size(28.dp)
             )
         }
         Column(
@@ -160,40 +71,47 @@ fun TemporizadorScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically)
             ) {
                 Text(
-                    text = "%02d:%02d".format(restante / 60, restante % 60),
+                    text = "%02d:%02d".format(estado.restante / 60, estado.restante % 60),
                     fontSize = 64.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
                 AjusteTiempo(
                     titulo = "Minutos",
-                    valor = minutos,
+                    valor = estado.minutos,
                     max = 99,
                     onCambiar = { nuevo ->
-                        minutos = nuevo
-                        if (!corriendo) restante = nuevo * 60 + segundos
+                        estado.minutos = nuevo
+                        if (!estado.corriendo) estado.restante = nuevo * 60 + estado.segundos
                     }
                 )
                 AjusteTiempo(
                     titulo = "Segundos",
-                    valor = segundos,
+                    valor = estado.segundos,
                     max = 59,
                     onCambiar = { nuevo ->
-                        segundos = nuevo
-                        if (!corriendo) restante = minutos * 60 + nuevo
+                        estado.segundos = nuevo
+                        if (!estado.corriendo) estado.restante = estado.minutos * 60 + nuevo
                     }
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
                         onClick = {
-                            if (restante == 0) {
-                                val total = minutos * 60 + segundos
+                            if (estado.restante == 0) {
+                                val total = estado.minutos * 60 + estado.segundos
                                 if (total > 0) {
-                                    restante = total
-                                    corriendo = true
+                                    estado.restante = total
+                                    estado.finEnMs = SystemClock.elapsedRealtime() + total * 1000L
+                                    estado.corriendo = true
                                 }
+                            } else if (estado.corriendo) {
+                                val quedanMs = estado.finEnMs - SystemClock.elapsedRealtime()
+                                estado.restante = ceil(quedanMs / 1000.0).toInt().coerceAtLeast(0)
+                                estado.corriendo = false
                             } else {
-                                corriendo = !corriendo
+                                estado.finEnMs =
+                                    SystemClock.elapsedRealtime() + estado.restante * 1000L
+                                estado.corriendo = true
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -201,12 +119,13 @@ fun TemporizadorScreen(
                             contentColor = Color.White
                         )
                     ) {
-                        Text(text = if (corriendo) "Detener" else "Iniciar", fontSize = 12.sp)
+                        Text(text = if (estado.corriendo) "Detener" else "Iniciar", fontSize = 12.sp)
                     }
                     OutlinedButton(
                         onClick = {
-                            corriendo = false
-                            restante = minutos * 60 + segundos
+                            estado.corriendo = false
+                            estado.finEnMs = 0L
+                            estado.restante = estado.minutos * 60 + estado.segundos
                         },
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black),
                         border = BorderStroke(width = 2.dp, color = AzulClaro)
@@ -216,35 +135,10 @@ fun TemporizadorScreen(
                 }
             }
             SeccionTally(
-                conteo = conteo,
-                onCambiar = { conteo = (conteo + it).coerceAtLeast(0) }
+                conteo = estado.conteo,
+                onCambiar = { estado.conteo = (estado.conteo + it).coerceAtLeast(0) }
             )
         }
-    }
-
-    if (tiempoAgotado) {
-        AlertDialog(
-            onDismissRequest = { tiempoAgotado = false },
-            containerColor = Color.White,
-            title = {
-                Text(
-                    text = "Tiempo agotado",
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { tiempoAgotado = false },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AzulBoton,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(text = "Aceptar", fontSize = 12.sp)
-                }
-            }
-        )
     }
 }
 
@@ -387,6 +281,6 @@ private fun AjusteTiempo(
 @Composable
 fun TemporizadorPreview() {
     ConsistentExerciseTheme {
-        TemporizadorScreen(onAbrirConfiguracion = {})
+        TemporizadorScreen(estado = recordarTemporizadorEstado(), onAbrirConfiguracion = {})
     }
 }
