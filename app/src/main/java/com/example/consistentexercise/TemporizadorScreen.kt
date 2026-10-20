@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -32,19 +34,39 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.consistentexercise.ui.AjusteTiempo
 import com.example.consistentexercise.ui.AzulBoton
 import com.example.consistentexercise.ui.AzulClaro
 import com.example.consistentexercise.ui.PantallaConBorde
 import com.example.consistentexercise.ui.theme.ConsistentExerciseTheme
-import kotlin.math.ceil
 
 @Composable
 fun TemporizadorScreen(
     estado: TemporizadorEstado,
+    autoIniciar: Boolean,
     onAbrirConfiguracion: () -> Unit,
+    onAbrirHistorial: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LaunchedEffect(Unit) {
+        estado.iniciarSiProcede(autoIniciar, SystemClock.elapsedRealtime())
+    }
+
     PantallaConBorde(modifier = modifier) {
+        IconButton(
+            onClick = onAbrirHistorial,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 20.dp, start = 20.dp)
+                .size(56.dp)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = "Historial",
+                tint = Color.Black,
+                modifier = Modifier.size(28.dp)
+            )
+        }
         IconButton(
             onClick = onAbrirConfiguracion,
             modifier = Modifier
@@ -70,6 +92,13 @@ fun TemporizadorScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically)
             ) {
+                if (estado.intervalosActivos) {
+                    Text(
+                        text = "${if (estado.fase == FaseTemporizador.EJERCICIO) "Ejercicio" else "Pausa"} · Ronda ${estado.ronda} de ${estado.rondasTotales}",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
                     text = "%02d:%02d".format(estado.restante / 60, estado.restante % 60),
                     fontSize = 64.sp,
@@ -82,7 +111,9 @@ fun TemporizadorScreen(
                     max = 99,
                     onCambiar = { nuevo ->
                         estado.minutos = nuevo
-                        if (!estado.corriendo) estado.restante = nuevo * 60 + estado.segundos
+                        if (!estado.corriendo && estado.fase == FaseTemporizador.EJERCICIO) {
+                            estado.restante = nuevo * 60 + estado.segundos
+                        }
                     }
                 )
                 AjusteTiempo(
@@ -91,28 +122,16 @@ fun TemporizadorScreen(
                     max = 59,
                     onCambiar = { nuevo ->
                         estado.segundos = nuevo
-                        if (!estado.corriendo) estado.restante = estado.minutos * 60 + nuevo
+                        if (!estado.corriendo && estado.fase == FaseTemporizador.EJERCICIO) {
+                            estado.restante = estado.minutos * 60 + nuevo
+                        }
                     }
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
                         onClick = {
-                            if (estado.restante == 0) {
-                                val total = estado.minutos * 60 + estado.segundos
-                                if (total > 0) {
-                                    estado.restante = total
-                                    estado.finEnMs = SystemClock.elapsedRealtime() + total * 1000L
-                                    estado.corriendo = true
-                                }
-                            } else if (estado.corriendo) {
-                                val quedanMs = estado.finEnMs - SystemClock.elapsedRealtime()
-                                estado.restante = ceil(quedanMs / 1000.0).toInt().coerceAtLeast(0)
-                                estado.corriendo = false
-                            } else {
-                                estado.finEnMs =
-                                    SystemClock.elapsedRealtime() + estado.restante * 1000L
-                                estado.corriendo = true
-                            }
+                            val ahora = SystemClock.elapsedRealtime()
+                            if (estado.corriendo) estado.detener(ahora) else estado.iniciar(ahora)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AzulBoton,
@@ -122,11 +141,7 @@ fun TemporizadorScreen(
                         Text(text = if (estado.corriendo) "Detener" else "Iniciar", fontSize = 12.sp)
                     }
                     OutlinedButton(
-                        onClick = {
-                            estado.corriendo = false
-                            estado.finEnMs = 0L
-                            estado.restante = estado.minutos * 60 + estado.segundos
-                        },
+                        onClick = { estado.reiniciar() },
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black),
                         border = BorderStroke(width = 2.dp, color = AzulClaro)
                     ) {
@@ -239,48 +254,15 @@ private fun GrupoTally(
     }
 }
 
-@Composable
-private fun AjusteTiempo(
-    titulo: String,
-    valor: Int,
-    max: Int,
-    onCambiar: (Int) -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(text = titulo, color = Color.Black)
-        Button(
-            onClick = { onCambiar((valor - 1).coerceAtLeast(0)) },
-            contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.size(36.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = AzulBoton,
-                contentColor = Color.White
-            )
-        ) {
-            Text(text = "-", fontSize = 18.sp)
-        }
-        Text(text = "%02d".format(valor), fontSize = 18.sp, color = Color.Black)
-        Button(
-            onClick = { onCambiar((valor + 1).coerceAtMost(max)) },
-            contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.size(36.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = AzulBoton,
-                contentColor = Color.White
-            )
-        ) {
-            Text(text = "+", fontSize = 18.sp)
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 fun TemporizadorPreview() {
     ConsistentExerciseTheme {
-        TemporizadorScreen(estado = recordarTemporizadorEstado(), onAbrirConfiguracion = {})
+        TemporizadorScreen(
+            estado = recordarTemporizadorEstado(),
+            autoIniciar = false,
+            onAbrirConfiguracion = {},
+            onAbrirHistorial = {}
+        )
     }
 }
