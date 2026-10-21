@@ -226,4 +226,37 @@ class TemporizadorEstadoTest {
         assertTrue(estado.idSesion != primeraSesion)
         assertEquals(200_000L, estado.inicioMs)
     }
+
+    @Test
+    fun laAlarmaConservaElConteoYSeReiniciaAlEmpezarOtraSesion() {
+        val estado = TemporizadorEstado(minutosIniciales = 1, segundosIniciales = 0)
+        estado.conteo = 7
+
+        estado.iniciar(ahoraMs = 0, ahoraParedMs = 5_000)
+        estado.avanzar(60_000)
+
+        assertTrue(estado.tiempoAgotado)
+        assertEquals(7, estado.conteo)
+
+        estado.iniciar(ahoraMs = 100_000, ahoraParedMs = 200_000)
+
+        assertEquals(0, estado.conteo)
+        assertTrue(estado.corriendo)
+    }
+
+    @Test
+    fun reiniciarTrasLaAlarmaMantieneElConteoHastaEmpezarDeNuevo() {
+        val estado = TemporizadorEstado(minutosIniciales = 1, segundosIniciales = 0)
+        estado.conteo = 5
+
+        estado.iniciar(ahoraMs = 0, ahoraParedMs = 5_000)
+        estado.avanzar(60_000)
+        estado.reiniciar()
+
+        assertEquals(5, estado.conteo)
+
+        estado.iniciar(ahoraMs = 100_000, ahoraParedMs = 200_000)
+
+        assertEquals(0, estado.conteo)
+    }
 }

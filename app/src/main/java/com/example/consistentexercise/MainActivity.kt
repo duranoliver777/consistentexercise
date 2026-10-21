@@ -246,7 +246,6 @@ fun AppConsistentExercise() {
         val sesion = crearSesionCompletada(temporizador, System.currentTimeMillis())
         if (sesion != null) {
             withContext(NonCancellable) { sesionRepositorio.guardar(sesion) }
-            if (temporizador.idSesion == sesion.id) temporizador.conteo = 0
         }
     }
 

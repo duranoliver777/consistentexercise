@@ -37,6 +37,7 @@ class TemporizadorEstado(
     var sesionIniciada by mutableStateOf(false)
     var idSesion by mutableStateOf("")
     var inicioMs by mutableLongStateOf(0L)
+    var pendienteReiniciarConteo by mutableStateOf(false)
 
     val duracionEjercicioSeg: Int get() = minutos * 60 + segundos
 
@@ -45,6 +46,10 @@ class TemporizadorEstado(
         if (tiempoAgotado || restante <= 0) reiniciar()
         if (duracionEjercicioSeg <= 0 && fase == FaseTemporizador.EJERCICIO) return
         if (restante <= 0) return
+        if (pendienteReiniciarConteo) {
+            conteo = 0
+            pendienteReiniciarConteo = false
+        }
         if (!sesionIniciada) {
             idSesion = UUID.randomUUID().toString()
             inicioMs = ahoraParedMs
@@ -161,6 +166,7 @@ class TemporizadorEstado(
         corriendo = false
         finEnMs = 0L
         tiempoAgotado = true
+        pendienteReiniciarConteo = true
     }
 
     companion object {
@@ -182,7 +188,8 @@ class TemporizadorEstado(
                     it.cambioFase,
                     it.sesionIniciada,
                     it.idSesion,
-                    it.inicioMs
+                    it.inicioMs,
+                    it.pendienteReiniciarConteo
                 )
             },
             restore = {
@@ -204,6 +211,7 @@ class TemporizadorEstado(
                     sesionIniciada = it[13] as Boolean
                     idSesion = it[14] as String
                     inicioMs = it[15] as Long
+                    pendienteReiniciarConteo = it.getOrNull(16) as? Boolean ?: false
                 }
             }
         )
